@@ -4,13 +4,10 @@ var topPoint;
 var leftPoint;
 var rightPoint;
 var sideLength = 500;
-var numPlayers = 1000;
+var numPlayers = 10000;
 var frameRt = 200;
 var players = [];
 
-let modest;
-let fair;
-let greedy;
 let strategies = [];
 let mouseDown = false;
 
@@ -77,9 +74,9 @@ function plotPointFromPlayers() {
     let numFair = 0;
     let numGreedy = 0;
     for (let i = 0; i < players.length; i++) {
-        if (players[i].strategy.name == "Modest") {
+        if (players[i].strategy.name == strategies[0].name) {
             numModest++;
-        } else if (players[i].strategy.name == "Fair") {
+        } else if (players[i].strategy.name == strategies[1].name) {
             numFair++;
         } else {
             numGreedy++;
@@ -144,9 +141,11 @@ function setup() {
     rightPoint = createVector(windowWidth / 2 + sideLength / 2, windowHeight / 2 + triangleHeight / 2);
 
     // Define the strategies
-    modest = new Strategy("Modest", color("#e9c46a"), () => 1 / 3);
-    fair = new Strategy("Fair", color("#f4a261"), () => 1 / 2);
-    greedy = new Strategy("Greedy", color("#e76f51"), () => 2 / 3);
+    let modest = new Strategy("Modest", color("#588157"), () => 1 / 3);
+    let quarter = new Strategy("Quarter", color("#e9c46a"), () => 0.6);
+    let fair = new Strategy("Fair", color("#219ebc"), () => 1 / 2);
+    let greedy = new Strategy("Greedy", color("#e76f51"), () => 2 / 3);
+    let mixed = new Strategy("Mixed", color("#e76f51"), () => random([1/3, 2/3]));
     strategies = [modest, fair, greedy];
 
     restart();
@@ -226,6 +225,17 @@ function restart() {
     stroke(0);
     triangle(topPoint.x, topPoint.y, leftPoint.x, leftPoint.y, rightPoint.x, rightPoint.y);
     window.lastPoint = undefined;
+
+    // Write Labels for the 3 points
+    textSize(20);
+    textAlign(CENTER, CENTER);
+    fill(strategies[0].color);
+    text(strategies[0].name, leftPoint.x - 40, leftPoint.y - 20);
+    fill(strategies[1].color);
+    text(strategies[1].name, topPoint.x, topPoint.y - 20);
+    fill(strategies[2].color);
+    text(strategies[2].name, rightPoint.x + 40, rightPoint.y - 20);
+
 }
 
 /**
@@ -233,9 +243,7 @@ function restart() {
  */
 function draw() {
     if (mouseDown) {
-        console.log("Mouse down");
         if (frameCount % 6 == 0) {
-            console.log("Creating new point");
             createNewPoint();
         }
     }
