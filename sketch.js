@@ -5,7 +5,14 @@ var leftPoint;
 var rightPoint;
 var sideLength = 500;
 var numPlayers = 1000;
+var frameRt = 200;
 var players = [];
+
+let modest;
+let fair;
+let greedy;
+let strategies = [];
+let mouseDown = false;
 
 class Strategy {
     constructor(name, color, stratCallBack) {
@@ -107,7 +114,7 @@ function simulateGame(game) {
 
     // Remove the bottom 50% of players
     players = players.slice(players.length / 2);
-    console.log(players.map(player => `${player.strategy.name}` + ": " + player.points));
+    // console.log(players.map(player => `${player.strategy.name}` + ": " + player.points));
     
     // Reproduce the top 50% of players
     let newPlayers = [];
@@ -127,7 +134,7 @@ function simulateGame(game) {
  */
 function setup() {
     createCanvas(windowWidth, windowHeight);
-    frameRate(5);
+    frameRate(frameRt);
     // Calculate the height of the triangle
     let triangleHeight = sideLength * sqrt(3) / 2;
 
@@ -137,13 +144,60 @@ function setup() {
     rightPoint = createVector(windowWidth / 2 + sideLength / 2, windowHeight / 2 + triangleHeight / 2);
 
     // Define the strategies
-    let modest = new Strategy("Modest", color("#e9c46a"), () => 1 / 3);
-    let fair = new Strategy("Fair", color("#f4a261"), () => 1 / 2);
-    let greedy = new Strategy("Greedy", color("#e76f51"), () => 2 / 3);
-    let strategies = [modest, fair, greedy];
+    modest = new Strategy("Modest", color("#e9c46a"), () => 1 / 3);
+    fair = new Strategy("Fair", color("#f4a261"), () => 1 / 2);
+    greedy = new Strategy("Greedy", color("#e76f51"), () => 2 / 3);
+    strategies = [modest, fair, greedy];
+
+    restart();
+}
+
+/**
+ * Return the distance of (x, y) from the line defined by P1 and P2 and scaled by the distance of P3 from the line
+ * @param {number} x the x coordinate of the point
+ * @param {number} y the y coordinate of the point
+ * @param {p5.Vector} P1 the first point of the line
+ * @param {p5.Vector} P2 the second point of the line
+ * @param {p5.Vector} P3 the point at which the function should return 1
+ */
+function scaledImplicit(x,y, P1, P2, P3) {
+    let A12 = P2.y - P1.y;
+    let B12 = -(P2.x - P1.x);
+    let C12 = P1.y*P2.x - P1.x*P2.y;
+    let k = A12*P3.x + B12*P3.y + C12;
+    return (A12*x + B12*y + C12)/k;
+}
+
+/**
+ * Get the baricentric coordinates of a point in a triangle
+ * @param {number} x the x coordinate of the point
+ * @param {number} y the y coordinate of the point
+ * @param {p5.Vector} P1 the first point of the triangle
+ * @param {p5.Vector} P2 the second point of the triangle
+ * @param {p5.Vector} P3 the third point of the triangle
+ * @returns {number[]} the baricentric coordinates of the point [a, b, c]
+ */
+function getBaricentricCoordinates(x, y, P1, P2, P3) {
+    let a = scaledImplicit(x, y, P2, P3, P1);
+    let b = scaledImplicit(x, y, P3, P1, P2);
+    let c = scaledImplicit(x, y, P1, P2, P3);
+    return [a, b, c];
+}
+
+/**
+ * Creates a new point at the mouse position
+ */
+function createNewPoint() {
+    // Get baricentric coordinates of the mouse click
+    let [a, b, c] = getBaricentricCoordinates(mouseX, mouseY, leftPoint, topPoint, rightPoint);
+
+
+    console.log(`Baricentric coordinates: (${a}, ${b}, ${c})`);
+    console.log(`Total: ${a + b + c}`);
 
     // Define the players
-    let strategyRatio = [0.05, 0.05, 0.9];
+    players = [];
+    let strategyRatio = [a, b, c];
     for (let i = 0; i < numPlayers; i++) {
         if (i < numPlayers * strategyRatio[0]) {
             players.push(new Player(strategies[0]));
@@ -153,19 +207,41 @@ function setup() {
             players.push(new Player(strategies[2]));
         }
     }
+    restart();
+    plotPointFromPlayers();
+}
 
+function mousePressed() {
+    console.log("Mouse pressed");
+    mouseDown = true;
+}
+
+function mouseReleased() {
+    mouseDown = false;
+}
+
+function restart() {
     background("#264653");
     fill("#fdf0d5");
+    stroke(0);
     triangle(topPoint.x, topPoint.y, leftPoint.x, leftPoint.y, rightPoint.x, rightPoint.y);
-    plotPointFromPlayers();
-
-
+    window.lastPoint = undefined;
 }
 
 /**
  * This function runs every frame
  */
 function draw() {
+    if (mouseDown) {
+        console.log("Mouse down");
+        if (frameCount % 6 == 0) {
+            console.log("Creating new point");
+            createNewPoint();
+        }
+    }
+    if (players.length == 0) {
+        return;
+    }
     simulateGame(divideTheCake);
     plotPointFromPlayers();
 }
