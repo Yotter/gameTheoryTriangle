@@ -9,12 +9,21 @@ var leftPoint;
 var rightPoint;
 var players = [];
 let strategies = [];
+let strategiesQueue = [];
 
 class Strategy {
     constructor(name, color, stratCallBack) {
         this.name = name;
         this.color = color;
         this.stratCallBack = stratCallBack; // function that returns the player's action
+    }
+
+    /**
+     * Returns a new instance of this stratefy
+     * @returns {Strategy} a new instance of this strategy
+     */
+    copy() {
+        return new Strategy(this.name, this.color, this.stratCallBack);
     }
 }
 
@@ -137,9 +146,9 @@ function plotPointFromPlayers() {
     let numStratTop = 0;
     let numStratRight = 0;
     for (let i = 0; i < players.length; i++) {
-        if (players[i].strategy.name == strategies[0].name) {
+        if (players[i].strategy == strategies[0]) {
             numStratLeft++;
-        } else if (players[i].strategy.name == strategies[1].name) {
+        } else if (players[i].strategy == strategies[1]) {
             numStratTop++;
         } else {
             numStratRight++;
@@ -196,6 +205,42 @@ function restart() {
 
 }
 /**
+ * p5js function called when the user clicks on the canvas
+ */
+function mouseClicked() {
+    // Detect if the click is on one of the labels
+    let labelHeight = 40;
+    let labelWidth = 80;
+
+    // Left label
+    if (mouseX > leftPoint.x - labelWidth && mouseX < leftPoint.x && mouseY > leftPoint.y - labelHeight && mouseY < leftPoint.y) {
+        console.log("Left");
+        strategiesQueue.push(strategies[0]);
+        strategies[0] = strategiesQueue.shift();
+        restart();
+        return;
+    }
+
+    // Top label
+    if (mouseX > topPoint.x - labelWidth / 2 && mouseX < topPoint.x + labelWidth / 2 && mouseY > topPoint.y - labelHeight && mouseY < topPoint.y) {
+        console.log("Top");
+        strategiesQueue.push(strategies[1]);
+        strategies[1] = strategiesQueue.shift();
+        restart();
+        return;
+    }
+
+    // Right label
+    if (mouseX > rightPoint.x && mouseX < rightPoint.x + labelWidth && mouseY > rightPoint.y - labelHeight && mouseY < rightPoint.y) {
+        console.log("Right");
+        strategiesQueue.push(strategies[2]);
+        strategies[2] = strategiesQueue.shift();
+        restart();
+        return;
+    }
+
+}
+/**
  * p5js function called when the program starts
  */
 function setup() {
@@ -211,11 +256,14 @@ function setup() {
 
     // Define the strategies
     let modest = new Strategy("Modest", color("#588157"), () => 1 / 3);
-    let quarter = new Strategy("Quarter", color("#e9c46a"), () => 0.6);
+    let quarter = new Strategy("Quarter", color("#7B66FF"), () => 0.25);
     let fair = new Strategy("Fair", color("#219ebc"), () => 1 / 2);
     let greedy = new Strategy("Greedy", color("#e76f51"), () => 2 / 3);
-    let mixed = new Strategy("Mixed", color("#e76f51"), () => random([1 / 3, 2 / 3]));
+    let mixed = new Strategy("Mixed", color("#C3ACD0"), () => random([1 / 3, 2 / 3]));
+    let superGreedy = new Strategy("Super Greedy", color("#F4AC45"), () => 0.75);
+
     strategies = [modest, fair, greedy];
+    strategiesQueue = [mixed, quarter, superGreedy];
 
     restart();
 }
